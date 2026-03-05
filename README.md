@@ -63,12 +63,18 @@ force_turbo=0
 ```
 Monitor temps: `watch -n 2 vcgencmd measure_temp`
 
-## Themes & Scraper
-- Themes: RetroPie-Setup → Manage Packages → Manage Themes. Lightweight: `carbon`, `simple`, `art-book-next`.
-- Scraper: Start → Scraper in ES; or install CLI scraper (RetroPie-Setup → optional → scraper), then run:
+## Themes, Scraper, Arcade Polish
+- Themes: RetroPie-Setup → Manage Packages → Manage Themes. Good looks: `art-book-next` (clean), `carbon` (fast), `es-theme-nes-box` (box art style).
+- Scraper (CLI):
 ```
 /opt/retropie/supplementary/scraper/scraper -thumb_only
 ```
+- Kiosk/Arcade polish:
+  - EmulationStation → UI Settings: set On-Screen Help = Off (optional), Enable Kiosk Mode to hide config items.
+  - Boot to ES: `sudo raspi-config` → System Options → Boot / Auto-Login → Console Auto-Login; RetroPie auto-starts ES.
+  - Screensaver: Video/Slideshow for attract-mode vibe.
+  - Bezel packs: install via RetroPie-Setup optional packages (libretro-bezels) or download packs matching your system; enable overlays in RetroArch per core.
+  - Hotkeys: keep Hotkey=Select; in-game menu = Hotkey+X; exit game = Hotkey+Start.
 
 ## Maintenance
 - Monthly: `cd ~/RetroPie-Setup && git pull && sudo ./retropie_setup.sh` (update script + installed packages).
