@@ -47,6 +47,16 @@ sudo ./retropie_setup.sh
 - PSP: `.iso/.cso`; no BIOS needed.
 - After copying ROMs/BIOS: Restart EmulationStation (Start → Quit → Restart EmulationStation).
 
+## Installing ROMs (ways to copy)
+- **SFTP/SSH (recommended):** From your PC, SFTP to `pi@<pi-ip>` and copy ROMs into the system folders above. Keep MAME zipped; others can be unzipped. Then restart EmulationStation.
+- **Network share (if enabled in RetroPie-Setup):** Copy to `\<pi-ip>\roms\<system>` from Windows or `smb://<pi-ip>/roms/<system>` from macOS.
+- **USB drive:** Format FAT32/exFAT; create `retropie-mount` folder on the drive, plug into Pi—RetroPie will create roms folders on the USB. Copy your ROMs there, reinsert; ES will use the USB. Remove safely.
+- **Local copy (terminal on Pi):** Put ROMs somewhere (e.g., `/home/pi/downloads`), then move:
+  - NES example: `mv ~/downloads/*.nes ~/RetroPie/roms/nes/`
+  - PSX example: keep `.cue` + `.bin` together: `mv ~/downloads/Game.cue ~/downloads/Game.bin ~/RetroPie/roms/psx/`
+- BIOS: drop required BIOS files into `/home/pi/RetroPie/BIOS/`.
+- To verify: run `./rom_inventory.sh /home/pi/RetroPie/roms > inventory.csv` (from this repo) to list files/sizes/hashes.
+
 ## Performance Tweaks (Pi 400)
 - GPU memory split: `sudo raspi-config` → Performance → GPU Memory = **256** (3D) or **128** (2D). Reboot.
 - Shaders: keep light or off. Good light options: `zfast_crt.glsl`, `crt-pi.glslp`, `sharp-bilinear`. Turn off for 3D systems.
