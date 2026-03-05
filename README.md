@@ -64,17 +64,28 @@ force_turbo=0
 Monitor temps: `watch -n 2 vcgencmd measure_temp`
 
 ## Themes, Scraper, Arcade Polish
-- Themes: RetroPie-Setup → Manage Packages → Manage Themes. Good looks: `art-book-next` (clean), `carbon` (fast), `es-theme-nes-box` (box art style).
+- Themes (Install via RetroPie-Setup → Manage Packages → Manage Themes):
+  - Fast: `carbon`
+  - Clean/artsy: `art-book-next`
+  - Box art vibe: `es-theme-nes-box`
 - Scraper (CLI):
 ```
 /opt/retropie/supplementary/scraper/scraper -thumb_only
 ```
 - Kiosk/Arcade polish:
-  - EmulationStation → UI Settings: set On-Screen Help = Off (optional), Enable Kiosk Mode to hide config items.
-  - Boot to ES: `sudo raspi-config` → System Options → Boot / Auto-Login → Console Auto-Login; RetroPie auto-starts ES.
-  - Screensaver: Video/Slideshow for attract-mode vibe.
-  - Bezel packs: install via RetroPie-Setup optional packages (libretro-bezels) or download packs matching your system; enable overlays in RetroArch per core.
-  - Hotkeys: keep Hotkey=Select; in-game menu = Hotkey+X; exit game = Hotkey+Start.
+  - EmulationStation → UI Settings: On-Screen Help Off (optional), Enable Kiosk Mode to hide config items.
+  - Boot to ES: `sudo raspi-config` → System Options → Boot / Auto-Login → Console Auto-Login (RetroPie auto-starts ES).
+  - Screensaver: Video/Slideshow for attract-mode; drop MP4s into `/home/pi/.emulationstation/downloaded_media/screenshots/` or set video sources in ES.
+  - Bezel packs: RetroPie-Setup → Optional packages → `lr-mame2003-plus` bezels/libretro-bezels; or download system packs and enable overlays per core.
+  - Hotkeys: Hotkey=Select; in-game menu = Hotkey+X; exit game = Hotkey+Start.
+
+## First-Boot Quick Wins (wow factor)
+1) Run `bash setup.sh` (from this repo) to prep packages and folders.
+2) Install theme: choose `art-book-next` in ES UI Settings → Theme Set.
+3) Scrape art: run the scraper command above (needs network).
+4) Enable screensaver: ES → UI Settings → Screensaver Mode = Video (or Slideshow).
+5) Kiosk mode on: ES → UI Settings → Kiosk Mode = On (hide settings from kids).
+6) Add bezels: enable libretro bezels via RetroPie-Setup optional packages.
 
 ## Maintenance
 - Monthly: `cd ~/RetroPie-Setup && git pull && sudo ./retropie_setup.sh` (update script + installed packages).
