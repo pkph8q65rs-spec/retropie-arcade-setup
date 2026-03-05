@@ -93,8 +93,9 @@ Monitor temps: `watch -n 2 vcgencmd measure_temp`
 - ES config path: `/home/pi/.emulationstation/` (configs in XML).
 - Auto-start RetroArch menu entry (optional): edit `/opt/retropie/configs/all/emulationstation/es_systems.cfg` to adjust per-system commands. Backup before editing.
 - Hide settings for kids: enable Kiosk Mode in ES UI; also set **Start → Other Settings → Enable Filtering** to hide empty systems.
+- Kid Mode (favorites-only): ES → Start → UI Settings → Kid Mode = On (only Favorites show; great for kids). Mark games as favorites first (Start → Edit Metadata → Favorite = On).
 - Screensaver video dir: ensure media in `/home/pi/.emulationstation/downloaded_media/screenshots/` or point to a custom folder in ES UI settings.
-- Favorite games: mark favorites in ES (Start → Edit Metadata) to surface a Favorites system.
+- Favorite games: mark favorites in ES (Start → Edit Metadata) to surface a Favorites system; use Kid Mode to show only these.
 
 ## Bezel Pack Links (reference)
 - Libretro bezels package (RetroPie optional): install `lr-mame2003-plus` bezels / `libretro-bezels` via RetroPie-Setup → optional packages.
