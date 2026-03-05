@@ -49,7 +49,7 @@ sudo ./retropie_setup.sh
 
 ## Installing ROMs (ways to copy)
 - **SFTP/SSH (recommended):** From your PC, SFTP to `pi@<pi-ip>` and copy ROMs into the system folders above. Keep MAME zipped; others can be unzipped. Then restart EmulationStation.
-- **Network share (if enabled in RetroPie-Setup):** Copy to `\<pi-ip>\roms\<system>` from Windows or `smb://<pi-ip>/roms/<system>` from macOS.
+- **Network share (if enabled in RetroPie-Setup):** Copy to `\\<pi-ip>\\roms\\<system>` from Windows or `smb://<pi-ip>/roms/<system>` from macOS.
 - **USB drive:** Format FAT32/exFAT; create `retropie-mount` folder on the drive, plug into Pi—RetroPie will create roms folders on the USB. Copy your ROMs there, reinsert; ES will use the USB. Remove safely.
 - **Local copy (terminal on Pi):** Put ROMs somewhere (e.g., `/home/pi/downloads`), then move:
   - NES example: `mv ~/downloads/*.nes ~/RetroPie/roms/nes/`
@@ -88,6 +88,17 @@ Monitor temps: `watch -n 2 vcgencmd measure_temp`
   - Screensaver: Video/Slideshow for attract-mode; drop MP4s into `/home/pi/.emulationstation/downloaded_media/screenshots/` or set video sources in ES.
   - Bezel packs: RetroPie-Setup → Optional packages → `lr-mame2003-plus` bezels/libretro-bezels; or download system packs and enable overlays per core.
   - Hotkeys: Hotkey=Select; in-game menu = Hotkey+X; exit game = Hotkey+Start.
+
+## EmulationStation (ES) Config Snippets
+- ES config path: `/home/pi/.emulationstation/` (configs in XML).
+- Auto-start RetroArch menu entry (optional): edit `/opt/retropie/configs/all/emulationstation/es_systems.cfg` to adjust per-system commands. Backup before editing.
+- Hide settings for kids: enable Kiosk Mode in ES UI; also set **Start → Other Settings → Enable Filtering** to hide empty systems.
+- Screensaver video dir: ensure media in `/home/pi/.emulationstation/downloaded_media/screenshots/` or point to a custom folder in ES UI settings.
+- Favorite games: mark favorites in ES (Start → Edit Metadata) to surface a Favorites system.
+
+## Bezel Pack Links (reference)
+- Libretro bezels package (RetroPie optional): install `lr-mame2003-plus` bezels / `libretro-bezels` via RetroPie-Setup → optional packages.
+- For system-specific packs: search “libretro bezel pack <system>” and drop overlays into `/opt/retropie/configs/all/retroarch/overlay/`; enable in RetroArch Quick Menu → On-Screen Overlay.
 
 ## First-Boot Quick Wins (wow factor)
 1) Run `bash setup.sh` (from this repo) to prep packages and folders.
