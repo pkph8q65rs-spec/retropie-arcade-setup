@@ -4,15 +4,27 @@ set -euo pipefail
 # setup.sh: Installer for RetroPie on DietPi (Pi 400 target).
 # Usage: bash setup.sh
 # Run as root on DietPi. No ROMs/BIOS are installed. You must add your own.
-# External drive must be mounted at /media/roms, /media/roms2, /media/extra before running.
+# External drive should be mounted at /media/roms, /media/roms2, /media/extra before running.
 
-# Config
 REPO_URL="https://github.com/pkph8q65rs-spec/retropie-arcade-setup.git"
 INSTALL_DIR="/root/retropie-arcade-setup"
 RETROPIE_SETUP_DIR="/root/RetroPie-Setup"
-RETROPIE_DIR="/root/RetroPie"
+
+PI_USER="pi"
+PI_HOME="/home/pi"
+RETROPIE_DIR="$PI_HOME/RetroPie"
+
 ROMS_DIR="/media/roms"
 ROMS2_DIR="/media/roms2"
+EXTRA_DIR="/media/extra"
+
+# Optional EmulationStation interface defaults (applied for pi user).
+# Set CUSTOM_UI_ENABLED=0 to skip these UI customizations.
+CUSTOM_UI_ENABLED="${CUSTOM_UI_ENABLED:-1}"
+CUSTOM_ES_THEME="${CUSTOM_ES_THEME:-carbon}"
+CUSTOM_ES_TRANSITION_STYLE="${CUSTOM_ES_TRANSITION_STYLE:-fade}"
+CUSTOM_ES_SCREENSAVER_STYLE="${CUSTOM_ES_SCREENSAVER_STYLE:-dim}"
+CUSTOM_ES_UI_MODE="${CUSTOM_ES_UI_MODE:-full}"
 
 log() { echo "[setup] $*"; }
 
@@ -20,10 +32,22 @@ check_drive() {
   log "Checking external drive is mounted..."
   if ! mountpoint -q "$ROMS_DIR"; then
     echo "ERROR: $ROMS_DIR is not mounted. Please mount your external drive first." >&2
-    echo "Run: mount /dev/sda2 /media/roms" >&2
+    echo "Example: mount /dev/sda2 $ROMS_DIR" >&2
     exit 1
   fi
+
+  mkdir -p "$ROMS2_DIR" "$EXTRA_DIR"
   log "External drive found at $ROMS_DIR."
+}
+
+ensure_pi_user() {
+  if ! id "$PI_USER" >/dev/null 2>&1; then
+    log "Creating user '$PI_USER'..."
+    useradd -m -s /bin/bash -G sudo,audio,video,input,plugdev,games "$PI_USER"
+    echo "$PI_USER:1234" | chpasswd
+  else
+    log "User '$PI_USER' already exists."
+  fi
 }
 
 ensure_packages() {
@@ -53,7 +77,7 @@ install_retropie_setup() {
 }
 
 create_dirs() {
-  log "Creating all ROM/BIOS folders on external drive..."
+  log "Creating ROM/BIOS folders on external drive..."
   mkdir -p \
     "$ROMS_DIR/3do" \
     "$ROMS_DIR/amiga" \
@@ -111,6 +135,7 @@ create_dirs() {
     "$ROMS_DIR/pico8" \
     "$ROMS_DIR/pokemini" \
     "$ROMS_DIR/ports" \
+    "$ROMS_DIR/ports/doom" \
     "$ROMS_DIR/psp" \
     "$ROMS_DIR/psx" \
     "$ROMS_DIR/residualvm" \
@@ -138,24 +163,48 @@ create_dirs() {
     "$ROMS2_DIR/wii" \
     "$ROMS2_DIR/ps2" \
     "$ROMS2_DIR/xbox" \
+    "$RETROPIE_DIR" \
     "$RETROPIE_DIR/BIOS"
 
-  log "Symlinking /root/RetroPie/roms -> $ROMS_DIR so RetroPie uses the external drive..."
+  log "Linking $RETROPIE_DIR/roms -> $ROMS_DIR ..."
   mkdir -p "$RETROPIE_DIR"
-  if [ -d "$RETROPIE_DIR/roms" ] && [ ! -L "$RETROPIE_DIR/roms" ]; then
-    log "Backing up existing roms folder..."
+
+  if [ -L "$RETROPIE_DIR/roms" ]; then
+    rm -f "$RETROPIE_DIR/roms"
+  elif [ -e "$RETROPIE_DIR/roms" ]; then
     mv "$RETROPIE_DIR/roms" "$RETROPIE_DIR/roms.bak"
   fi
-  ln -sf "$ROMS_DIR" "$RETROPIE_DIR/roms"
-  log "Symlink created."
+  ln -s "$ROMS_DIR" "$RETROPIE_DIR/roms"
+
+  log "Linking /root/RetroPie/roms -> $ROMS_DIR for admin convenience..."
+  mkdir -p /root/RetroPie
+  if [ -L /root/RetroPie/roms ]; then
+    rm -f /root/RetroPie/roms
+  elif [ -e /root/RetroPie/roms ]; then
+    mv /root/RetroPie/roms /root/RetroPie/roms.bak
+  fi
+  ln -s "$ROMS_DIR" /root/RetroPie/roms
+
+  chown -R "$PI_USER:$PI_USER" "$PI_HOME"
+  chown -R "$PI_USER:$PI_USER" "$RETROPIE_DIR"
+
+  if [ -d "$ROMS_DIR" ]; then
+    chown -R "$PI_USER:$PI_USER" "$ROMS_DIR" || true
+  fi
+  if [ -d "$ROMS2_DIR" ]; then
+    chown -R "$PI_USER:$PI_USER" "$ROMS2_DIR" || true
+  fi
 }
 
 setup_samba() {
   log "Configuring Samba for Mac/PC network access..."
-  cat >> /etc/samba/smb.conf << 'EOF'
+
+  if ! grep -q "^\[roms\]$" /etc/samba/smb.conf; then
+    cat >> /etc/samba/smb.conf << 'EOF'
 
 [roms]
 path = /media/roms
+browseable = yes
 writeable = yes
 guest ok = yes
 create mask = 0777
@@ -163,6 +212,7 @@ directory mask = 0777
 
 [roms2]
 path = /media/roms2
+browseable = yes
 writeable = yes
 guest ok = yes
 create mask = 0777
@@ -170,53 +220,124 @@ directory mask = 0777
 
 [extra]
 path = /media/extra
+browseable = yes
 writeable = yes
 guest ok = yes
 create mask = 0777
 directory mask = 0777
 EOF
+  else
+    log "Samba shares already present, skipping append."
+  fi
+
+  systemctl enable smbd
   systemctl restart smbd
-  log "Samba configured. Connect from Mac: smb://192.168.1.167"
+  log "Samba configured."
 }
 
 setup_autologin() {
-  log "Setting up auto-login and auto-start EmulationStation..."
+  log "Setting up auto-login for $PI_USER..."
   mkdir -p /etc/systemd/system/getty@tty1.service.d
   cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin root --noclear %I \$TERM
+ExecStart=-/sbin/agetty --autologin $PI_USER --noclear %I \$TERM
 EOF
+}
 
-  if ! grep -q "emulationstation" /root/.bashrc; then
-    cat >> /root/.bashrc << 'EOF'
+setup_autostart_es() {
+  log "Setting up auto-start EmulationStation for $PI_USER..."
 
-# Auto-start EmulationStation on tty1
+  cat > "$PI_HOME/.bash_profile" << 'EOF'
+if [ -n "${SSH_CONNECTION:-}" ]; then
+  return
+fi
+
 if [ "$(tty)" = "/dev/tty1" ]; then
-  emulationstation
+  if command -v emulationstation >/dev/null 2>&1; then
+    emulationstation
+  fi
 fi
 EOF
+
+  chown "$PI_USER:$PI_USER" "$PI_HOME/.bash_profile"
+
+  sed -i '/emulationstation/d' /root/.bashrc 2>/dev/null || true
+}
+
+setup_custom_interface() {
+  if [ "$CUSTOM_UI_ENABLED" != "1" ]; then
+    log "Custom interface disabled (CUSTOM_UI_ENABLED=$CUSTOM_UI_ENABLED)."
+    return
   fi
-  log "Auto-login and auto-start configured."
+
+  log "Applying custom EmulationStation interface settings..."
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    log "python3 not found; skipping custom interface config."
+    return
+  fi
+
+  local es_dir="$PI_HOME/.emulationstation"
+  local es_settings="$es_dir/es_settings.cfg"
+
+  mkdir -p "$es_dir"
+
+  python3 - "$es_settings" "$CUSTOM_ES_THEME" "$CUSTOM_ES_TRANSITION_STYLE" "$CUSTOM_ES_SCREENSAVER_STYLE" "$CUSTOM_ES_UI_MODE" << 'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+settings_path, theme, transition, screensaver, ui_mode = sys.argv[1:]
+
+try:
+    tree = ET.parse(settings_path)
+    root = tree.getroot()
+except Exception:
+    root = ET.Element("config")
+    tree = ET.ElementTree(root)
+
+def set_string(name: str, value: str) -> None:
+    for elem in root.findall("string"):
+        if elem.get("name") == name:
+            elem.set("value", value)
+            return
+    ET.SubElement(root, "string", name=name, value=value)
+
+set_string("ThemeSet", theme)
+set_string("TransitionStyle", transition)
+set_string("ScreenSaverBehavior", screensaver)
+set_string("UIMode", ui_mode)
+
+tree.write(settings_path, encoding="utf-8", xml_declaration=True)
+PY
+
+  chown -R "$PI_USER:$PI_USER" "$es_dir"
+  log "Custom interface configured (theme=$CUSTOM_ES_THEME, ui_mode=$CUSTOM_ES_UI_MODE)."
 }
 
 main() {
   log "Starting DietPi RetroPie setup..."
   check_drive
+  ensure_pi_user
   ensure_packages
   clone_repo
   install_retropie_setup
   create_dirs
   setup_samba
   setup_autologin
+  setup_autostart_es
+  setup_custom_interface
+
   log ""
   log "====================================="
   log "Setup complete! Next steps:"
-  log "1. Run RetroPie-Setup: cd $RETROPIE_SETUP_DIR && sudo ./retropie_setup.sh"
+  log "1. Run RetroPie-Setup:"
+  log "   cd $RETROPIE_SETUP_DIR && ./retropie_setup.sh"
   log "2. Choose Basic Install"
-  log "3. After install, reboot: sudo reboot"
-  log "4. Pi will boot straight into EmulationStation"
-  log "5. Copy ROMs from Mac via Finder: smb://192.168.1.167"
+  log "3. Install optional packages you want"
+  log "4. Reboot"
+  log "5. Pi will auto-login as $PI_USER and launch EmulationStation"
+  log "6. Copy ROMs from Mac via Finder: smb://192.168.1.167"
   log "====================================="
 }
 
